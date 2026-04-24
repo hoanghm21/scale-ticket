@@ -1,0 +1,54 @@
+{
+  "name": "scale-ticket",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Real-time Event Ticketing System — Monorepo",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "turbo run clean && rimraf node_modules",
+    "proto:generate": "turbo run proto:generate",
+    "db:migrate": "turbo run db:migrate",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.2.0",
+    "rimraf": "^5.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md,yml,yaml}": ["prettier --write"]
+  },
+  "pnpm": {
+    "packageExtensions": {
+      "lucide-react@1.8.0": {
+        "dependencies": {
+          "@types/react": "18.3.28"
+        }
+      },
+      "next@14.2.35": {
+        "dependencies": {
+          "@types/react": "18.3.28",
+          "@types/react-dom": "18.3.7"
+        }
+      }
+    }
+  }
+}

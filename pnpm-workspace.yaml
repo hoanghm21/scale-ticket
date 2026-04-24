@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "!apps/desktop"
+  - "packages/*"
+  - "services/gateway"
+  - "services/payment"
+  - "services/notification"
+  - "services/realtime"

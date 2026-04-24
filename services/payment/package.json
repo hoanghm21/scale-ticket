@@ -1,0 +1,33 @@
+{
+  "name": "@scale-ticket/payment",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/ --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@scale-ticket/shared-types": "workspace:*",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "pino": "^8.20.0",
+    "stripe": "^15.1.0",
+    "uuid": "^14.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/uuid": "^11.0.0",
+    "eslint": "^8.57.0",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.5.0"
+  }
+}

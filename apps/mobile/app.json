@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "ScaleTicket",
+    "slug": "scale-ticket",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4263eb"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.scaleticket.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4263eb"
+      },
+      "package": "io.scaleticket.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-barcode-scanner"
+    ],
+    "scheme": "scaleticket"
+  }
+}

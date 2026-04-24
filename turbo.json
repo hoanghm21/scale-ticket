@@ -1,0 +1,38 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env"],
+  "globalEnv": ["NODE_ENV", "DATABASE_URL", "REDIS_URL", "MONGODB_URL"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "package.json", "tsconfig.json"],
+      "outputs": ["dist/**", ".next/**", "build/**"],
+      "cache": true
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "persistent": true,
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "inputs": ["src/**", "tests/**", "__tests__/**"],
+      "cache": true
+    },
+    "lint": {
+      "inputs": ["src/**", ".eslintrc*", "tsconfig.json"],
+      "cache": true
+    },
+    "clean": {
+      "cache": false
+    },
+    "proto:generate": {
+      "inputs": ["../../packages/proto/**/*.proto"],
+      "outputs": ["src/proto/**"],
+      "cache": true
+    },
+    "db:migrate": {
+      "cache": false
+    }
+  }
+}

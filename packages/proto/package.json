@@ -1,0 +1,24 @@
+{
+  "name": "@scale-ticket/proto",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "generate": "buf generate",
+    "proto:generate": "buf generate",
+    "clean": "rimraf gen"
+  },
+  "exports": {
+    "./ts/*": "./gen/ts/*"
+  },
+  "files": ["gen"],
+  "dependencies": {
+    "@bufbuild/protobuf": "^1.7.2",
+    "@connectrpc/connect": "^1.4.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.29.0",
+    "@bufbuild/protoc-gen-es": "^1.7.2",
+    "@connectrpc/protoc-gen-connect-es": "^1.4.0",
+    "rimraf": "^5.0.0"
+  }
+}

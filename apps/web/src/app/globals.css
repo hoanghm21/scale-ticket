@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@layer base {
+  :root {
+    --color-bg: 255 255 255;
+    --color-surface: 248 249 250;
+    --color-text: 33 37 41;
+    --color-text-muted: 134 142 150;
+    --color-border: 222 226 230;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --color-bg: 0 0 0;
+    --color-surface: 10 10 10;
+    --color-text: 255 255 255;
+    --color-text-muted: 153 153 153;
+    --color-border: 34 34 34;
+  }
+
+  * {
+    @apply border-[rgb(var(--color-border))];
+  }
+
+  body {
+    @apply bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-sm bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-sky-400 hover:via-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-600/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-sm border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 active:scale-[0.98] dark:bg-transparent dark:border-gray-800 dark:text-white dark:hover:border-white;
+  }
+
+  .card {
+    @apply rounded-none border bg-[rgb(var(--color-surface))] p-6 transition-all hover:border-indigo-500/50 hover:shadow-[0_0_20px_-5px_rgba(99,102,241,0.3)];
+  }
+
+  .input {
+    @apply w-full rounded-sm border bg-[rgb(var(--color-bg))] px-4 py-2.5 text-sm outline-none transition-all placeholder:text-[rgb(var(--color-text-muted))] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-black/90 border-b border-gray-900;
+  }
+}

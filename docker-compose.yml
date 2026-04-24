@@ -1,0 +1,188 @@
+services:
+  # ── Databases ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: st-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: scaleticket
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: scaleticket
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scaleticket"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7
+    container_name: st-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: st-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Services ──
+  gateway:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE_PATH: services/gateway
+    container_name: st-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - GRPC_AUTH_SERVICE=auth:50051
+      - GRPC_EVENT_SERVICE=event:50052
+      - GRPC_TICKET_SERVICE=ticket:50053
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  auth:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.go
+      args:
+        SERVICE_PATH: services/auth
+    container_name: st-auth
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    environment:
+      - DATABASE_URL=postgresql://scaleticket:changeme@postgres:5432/scaleticket
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  event:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.go
+      args:
+        SERVICE_PATH: services/event
+    container_name: st-event
+    restart: unless-stopped
+    ports:
+      - "50052:50052"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017/scaleticket_events
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ticket:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.go
+      args:
+        SERVICE_PATH: services/ticket
+    container_name: st-ticket
+    restart: unless-stopped
+    ports:
+      - "50053:50053"
+    environment:
+      - DATABASE_URL=postgresql://scaleticket:changeme@postgres:5432/scaleticket
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  payment:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE_PATH: services/payment
+    container_name: st-payment
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://scaleticket:changeme@postgres:5432/scaleticket
+      - STRIPE_SECRET_KEY=sk_test_xxx
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE_PATH: services/notification
+    container_name: st-notification
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://mongodb:27017/scaleticket_events
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  realtime:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE_PATH: services/realtime
+    container_name: st-realtime
+    restart: unless-stopped
+    ports:
+      - "4003:4003"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:

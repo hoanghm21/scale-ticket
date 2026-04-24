@@ -1,0 +1,88 @@
+# ========================
+# Dependencies
+# ========================
+node_modules/
+.pnpm-store/
+vendor/
+
+# ========================
+# Build Outputs
+# ========================
+dist/
+build/
+.next/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+target/
+
+# ========================
+# Environment
+# ========================
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ========================
+# IDE & Editors
+# ========================
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================
+# Testing & Coverage
+# ========================
+coverage/
+.nyc_output/
+*.lcov
+__snapshots__/
+
+# ========================
+# Logs
+# ========================
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ========================
+# Turborepo
+# ========================
+.turbo/
+
+# ========================
+# Docker
+# ========================
+docker-compose.override.yml
+
+# ========================
+# Terraform
+# ========================
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/*.tfplan
+
+# ========================
+# Generated Code
+# ========================
+**/proto/generated/
+*_pb.go
+*_grpc.pb.go
+*.pb.ts
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

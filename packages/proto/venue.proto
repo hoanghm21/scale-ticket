@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package venue.v1;
+
+option go_package = "github.com/scale-ticket/event/internal/domain/proto/venue";
+
+message CreateVenueLayoutRequest {
+  VenueLayoutSchema layout = 1;
+}
+
+message CreateVenueLayoutResponse {
+  string id = 1;
+  bool success = 2;
+}
+
+message GetVenueLayoutRequest {
+  string id = 1;
+}
+
+message GetVenueLayoutResponse {
+  VenueLayoutSchema layout = 1;
+}
+
+message VenueLayoutSchema {
+  string id = 1;
+  string name = 2;
+  string category = 3;
+  repeated VenueSection sections = 4;
+}
+
+message VenueSection {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  VenueSectionShape shape = 4;
+  int32 rows = 5;
+  int32 seats_per_row = 6;
+  int32 base_price = 7;
+  double curve_factor = 8;
+}
+
+message VenueSectionShape {
+  string kind = 1;
+  
+  // Rect bounds
+  double x = 2;
+  double y = 3;
+  double w = 4;
+  double h = 5;
+  
+  // Arc bounds
+  double cx = 6;
+  double cy = 7;
+  double r1 = 8;
+  double r2 = 9;
+  double a0 = 10;
+  double a1 = 11;
+  
+  // Poly points [x1, y1, x2, y2, ...]
+  repeated double points = 12;
+}
+
+service VenueService {
+  rpc CreateVenueLayout(CreateVenueLayoutRequest) returns (CreateVenueLayoutResponse);
+  rpc GetVenueLayout(GetVenueLayoutRequest) returns (GetVenueLayoutResponse);
+}

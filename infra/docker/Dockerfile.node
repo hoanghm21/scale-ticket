@@ -1,0 +1,21 @@
+FROM node:20-alpine
+
+RUN corepack enable
+WORKDIR /app
+
+# Copy the entire monorepo for the build context
+COPY . .
+
+# Install dependencies globally for the workspace
+RUN pnpm install
+
+# The build argument passed from docker-compose.yml
+ARG SERVICE_PATH
+ENV SERVICE_PATH=${SERVICE_PATH}
+
+# Navigate to the specific service and build it
+WORKDIR /app/${SERVICE_PATH}
+RUN pnpm run build
+
+# Start the service
+CMD ["pnpm", "run", "start"]
