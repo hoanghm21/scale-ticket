@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import Image from "next/image";
 import { Sparkles, MousePointer2, SlidersHorizontal, Users, ChevronLeft, Wifi, WifiOff } from "lucide-react";
 import { useEventSocket, SeatStatusChange } from "@/hooks/useEventSocket";
 
@@ -226,7 +227,7 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
     return m;
   }, [sections]);
 
-  const overviewShapes = OVERVIEW_SHAPES[layoutType] ?? {};
+  const overviewShapes = useMemo(() => OVERVIEW_SHAPES[layoutType] ?? {}, [layoutType]);
 
   // Sync state from parent if parent explicitly clears it (e.g. from footer)
   useEffect(() => {
@@ -767,8 +768,8 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
           <div ref={tooltipRef} className="absolute top-0 left-0 z-20 pointer-events-auto" style={{ willChange: "transform" }}>
             <div className="bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-2xl flex flex-col w-48 animate-in fade-in zoom-in duration-200">
               <div className="h-28 relative group overflow-hidden cursor-pointer bg-gradient-to-br from-violet-700 to-blue-700">
-                <img src="https://images.unsplash.com/photo-1540039155732-d6741492ba09?auto=format&fit=crop&q=80&w=400"
-                  alt="Stage View" className="w-full h-full object-cover opacity-75 group-hover:scale-110 transition-transform duration-500" />
+                <Image src="https://images.unsplash.com/photo-1540039155732-d6741492ba09?auto=format&fit=crop&q=80&w=400"
+                  alt="Stage View" fill sizes="192px" className="object-cover opacity-75 group-hover:scale-110 transition-transform duration-500" />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-colors">
                   <span className="text-white font-bold text-xs tracking-widest bg-black/40 px-3 py-1 rounded-full border border-white/20 backdrop-blur-md">VIEW FROM SEAT</span>
                 </div>

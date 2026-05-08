@@ -4,7 +4,7 @@
   "private": true,
   "main": "src/index.ts",
   "scripts": {
-    "lint": "eslint src/ --ext .ts,.tsx",
+    "lint": "eslint . --ext .ts,.tsx --no-error-on-unmatched-pattern --ignore-pattern node_modules --ignore-pattern .turbo",
     "test": "vitest run"
   },
   "dependencies": {

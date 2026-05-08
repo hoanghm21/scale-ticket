@@ -22,6 +22,15 @@ export function useEventSocket({ eventId, onSnapshot, onSeatChange, onLockAck }:
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
+  // Hold latest callbacks in refs so the socket effect can stay keyed on eventId
+  // alone — re-subscribing on every render would tear down the socket connection.
+  const onSnapshotRef = useRef(onSnapshot);
+  const onSeatChangeRef = useRef(onSeatChange);
+  const onLockAckRef = useRef(onLockAck);
+  useEffect(() => { onSnapshotRef.current = onSnapshot; }, [onSnapshot]);
+  useEffect(() => { onSeatChangeRef.current = onSeatChange; }, [onSeatChange]);
+  useEffect(() => { onLockAckRef.current = onLockAck; }, [onLockAck]);
+
   useEffect(() => {
     const socket = io(REALTIME_URL, {
       transports: ["websocket", "polling"],
@@ -42,17 +51,17 @@ export function useEventSocket({ eventId, onSnapshot, onSeatChange, onLockAck }:
 
     // Tier 4: Listen for the full snapshot on room join
     socket.on("inventory_snapshot", (seats: any[]) => {
-      onSnapshot(seats);
+      onSnapshotRef.current(seats);
     });
 
     // Tier 4: Listen for individual seat status changes
     socket.on("seat_status_change", (change: SeatStatusChange) => {
-      onSeatChange(change);
+      onSeatChangeRef.current(change);
     });
 
     // Tier 5: Lock acknowledgment
     socket.on("lock_ack", (ack: any) => {
-      onLockAck(ack);
+      onLockAckRef.current(ack);
     });
 
     return () => {

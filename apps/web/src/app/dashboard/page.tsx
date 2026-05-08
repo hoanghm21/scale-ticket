@@ -44,7 +44,7 @@ export default function DashboardPage() {
             
             {(!user || getTickets(user.id).length === 0) ? (
               <div className="bg-surface-dark-secondary rounded-2xl p-8 border border-gray-800 text-center text-gray-500">
-                <p>You haven't purchased any tickets yet.</p>
+                <p>You haven&apos;t purchased any tickets yet.</p>
               </div>
             ) : (
               <div className="space-y-6">

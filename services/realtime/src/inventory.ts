@@ -231,7 +231,7 @@ export async function getOrCreateInventory(eventId: string): Promise<Map<string,
   }
 
   const config = EVENT_CONFIGS[eventId];
-  let seatMap = new Map<string, SeatData>();
+  const seatMap = new Map<string, SeatData>();
 
   if (!config) {
     let hash = 0;

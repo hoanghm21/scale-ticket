@@ -59,6 +59,16 @@ pnpm-debug.log*
 .turbo/
 
 # ========================
+# TypeScript incremental
+# ========================
+*.tsbuildinfo
+
+# ========================
+# Tooling caches
+# ========================
+.commandcode/
+
+# ========================
 # Docker
 # ========================
 docker-compose.override.yml

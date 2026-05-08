@@ -61,7 +61,7 @@ export default function EventPage({ params }: { params: { id: string } }) {
             <div className="lg:col-span-2">
               <h2 className="text-2xl font-bold text-white mb-4">About This Event</h2>
               <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                Experience the magic of {event.title} live at the {event.venue}. Get ready for a breathtaking performance spanning two hours of incredible entertainment, stunning visuals, and unforgettable moments. Secure your spot now before it's sold out.
+                Experience the magic of {event.title} live at the {event.venue}. Get ready for a breathtaking performance spanning two hours of incredible entertainment, stunning visuals, and unforgettable moments. Secure your spot now before it&apos;s sold out.
               </p>
 
               <div className="bg-surface-dark-secondary rounded-2xl p-6 border border-gray-800">

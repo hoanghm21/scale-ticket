@@ -1,5 +1,4 @@
 import express from "express";
-import { Queue, Worker } from "bullmq";
 
 const app = express();
 app.use(express.json());
@@ -15,7 +14,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/health", (req, res) => {
+app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "notification" });
 });
 

@@ -1,12 +1,12 @@
 package grpc
 
 import (
-	"context"
+	// "context" // Uncomment once buf-generated handlers below are enabled
 
 	"github.com/scale-ticket/event/internal/domain"
 	// "github.com/scale-ticket/event/internal/domain/proto/venue" // Uncomment once buf generate succeeds
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	// "go.mongodb.org/mongo-driver/bson/primitive" // Uncomment once buf-generated handlers below are enabled
 )
 
 // VenueServiceHandler implements the gRPC interface generated from venue.proto
