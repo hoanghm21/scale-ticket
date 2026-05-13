@@ -2,7 +2,6 @@
 
 > A real-time, event-driven ticketing platform built with microservices architecture.
 
-[![CI](https://github.com/your-org/scale-ticket/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/scale-ticket/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
@@ -102,7 +101,7 @@ ScaleTicket/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/scale-ticket.git
+git clone https://github.com/hoanghm21/scale-ticket.git
 cd scale-ticket
 
 # Install dependencies
