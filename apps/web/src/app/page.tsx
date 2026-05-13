@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "../components/layout/Navbar";
 import { Button } from "../components/ui/Button";
 import { EventCard } from "../components/event/EventCard";
-import { mockEvents } from "@/lib/mock";
+import { fetchEvents } from "@/lib/api";
+import type { MockEvent } from "@/lib/mock";
 import { Search, Sparkles, Filter } from "lucide-react";
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [events, setEvents] = useState<MockEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchEvents()
+      .then(setEvents)
+      .catch(() => setEvents([]))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const categories = ["All", "Concerts", "Sports", "Arts & Theater"];
 
-  const filteredEvents = mockEvents.filter(e => {
+  const filteredEvents = events.filter(e => {
     const matchesCategory = activeCategory === "All" || e.category === activeCategory;
     const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           e.venue.toLowerCase().includes(searchQuery.toLowerCase());
@@ -95,16 +105,37 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-
-            {filteredEvents.length === 0 && (
-              <div className="text-center py-20">
-                <p className="text-gray-500 text-lg">No events found matching your criteria.</p>
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-surface-dark border border-gray-800 rounded-2xl overflow-hidden animate-pulse">
+                    <div className="h-52 bg-gray-800" />
+                    <div className="p-5 space-y-3">
+                      <div className="h-3 w-20 bg-gray-800 rounded" />
+                      <div className="h-5 w-3/4 bg-gray-800 rounded" />
+                      <div className="h-3 w-1/2 bg-gray-800 rounded" />
+                      <div className="flex justify-between pt-2">
+                        <div className="h-4 w-16 bg-gray-800 rounded" />
+                        <div className="h-8 w-24 bg-gray-800 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+
+                {filteredEvents.length === 0 && (
+                  <div className="text-center py-20">
+                    <p className="text-gray-500 text-lg">No events found matching your criteria.</p>
+                  </div>
+                )}
+              </>
             )}
 
           </div>

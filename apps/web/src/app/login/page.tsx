@@ -14,21 +14,40 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Mock login delay
-    setTimeout(() => {
-      login("mock_jwt_token_123", {
-        id: "u_1",
-        email: email || "alex.rivers@example.com",
-        firstName: "Alex",
-        lastName: "Rivers",
-        role: "user"
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Invalid email or password");
+        setIsLoading(false);
+        return;
+      }
+
+      login(data.tokens.accessToken, {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        role: data.user.role,
       });
       router.push("/dashboard");
-    }, 800);
+    } catch (err) {
+      setError("Unable to connect to the server. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -49,8 +68,12 @@ export default function LoginPage() {
         <p className="text-gray-400 text-center mb-8 text-sm">Enter your credentials to access your tickets</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-md animate-fade-in">
+              {error}
+            </div>
+          )}
+          <div>  <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
             <input 
               type="email" 
               required

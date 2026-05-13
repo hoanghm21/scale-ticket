@@ -83,11 +83,11 @@ const π = Math.PI;
 
 const OVERVIEW_SHAPES: Record<string, Record<string, OverviewShape>> = {
   arena: {
-    "Floor VIP":     { kind: "rect", x: 296, y: 166, w: 208, h: 100 },
-    "Floor General": { kind: "rect", x: 276, y: 266, w: 244, h: 136 },
-    "Bowl Left":     { kind: "arc",  cx: 400, cy: 230, r1: 206, r2: 432, a0: π * 0.70 - 0.04, a1: π * 0.95 + 0.06 },
-    "Bowl Center":   { kind: "arc",  cx: 400, cy: 230, r1: 206, r2: 432, a0: π * 0.35 - 0.04, a1: π * 0.65 + 0.04 },
-    "Bowl Right":    { kind: "arc",  cx: 400, cy: 230, r1: 206, r2: 432, a0: π * 0.05 - 0.06, a1: π * 0.30 + 0.04 },
+    "Floor VIP":     { kind: "rect", x: 294, y: 154, w: 212, h: 104 },
+    "Floor General": { kind: "rect", x: 294, y: 274, w: 212, h: 140 },
+    "Bowl Left":     { kind: "arc",  cx: 400, cy: 255, r1: 206, r2: 432, a0: π * 0.70 - 0.04, a1: π * 0.95 + 0.06 },
+    "Bowl Center":   { kind: "arc",  cx: 400, cy: 255, r1: 206, r2: 432, a0: π * 0.35 - 0.04, a1: π * 0.65 + 0.04 },
+    "Bowl Right":    { kind: "arc",  cx: 400, cy: 255, r1: 206, r2: 432, a0: π * 0.05 - 0.06, a1: π * 0.30 + 0.04 },
   },
   stadium: {
     "North Stand": { kind: "rect", x: 222, y: 24,  w: 356, h: 122 },
@@ -101,12 +101,12 @@ const OVERVIEW_SHAPES: Record<string, Record<string, OverviewShape>> = {
   },
   theater: {
     "Swan":         { kind: "poly", points: [[323, 138], [477, 138], [504, 400], [296, 400]] },
-    "Sword L":      { kind: "rect", x: 202, y: 182, w: 82,  h: 226 },
-    "Sword R":      { kind: "rect", x: 516, y: 182, w: 82,  h: 226 },
-    "Ballerina L":  { kind: "rect", x: 118, y: 146, w: 82,  h: 262 },
-    "Ballerina R":  { kind: "rect", x: 600, y: 146, w: 82,  h: 262 },
-    "Feather L":    { kind: "rect", x: 40,  y: 136, w: 82,  h: 262 },
-    "Feather R":    { kind: "rect", x: 678, y: 136, w: 82,  h: 262 },
+    "Sword L":      { kind: "rect", x: 188, y: 186, w: 74,  h: 218 },
+    "Sword R":      { kind: "rect", x: 538, y: 186, w: 74,  h: 218 },
+    "Ballerina L":  { kind: "rect", x: 110, y: 150, w: 74,  h: 254 },
+    "Ballerina R":  { kind: "rect", x: 616, y: 150, w: 74,  h: 254 },
+    "Feather L":    { kind: "rect", x: 32,  y: 140, w: 74,  h: 254 },
+    "Feather R":    { kind: "rect", x: 694, y: 140, w: 74,  h: 254 },
     "2F Feather L":   { kind: "rect", x: 40,  y: 424, w: 172, h: 100 },
     "2F Feather C":   { kind: "rect", x: 214, y: 424, w: 370, h: 100 },
     "2F Feather R":   { kind: "rect", x: 586, y: 424, w: 172, h: 100 },
@@ -172,6 +172,7 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
   const camRef       = useRef({ ...INITIAL_CAM });
   const targetRef    = useRef({ ...INITIAL_CAM });
   const dragRef           = useRef({ isDragging: false, startX: 0, startY: 0, moved: false });
+  const lastTouchRef      = useRef<{ d: number; cx: number; cy: number } | null>(null);
   const tooltipRef        = useRef<HTMLDivElement>(null);
   const activeSectionRef  = useRef<string | null>(null);
 
@@ -498,8 +499,9 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
 
           // Dynamically distribute labels outwards from the perimeter of the Stadium
           let labelX = (sec.minX + sec.maxX) / 2;
-          let labelY = sec.minY - 6 - (8 / zoom); // Default top
+          let labelY = sec.minY - 8 - (6 / zoom); // Default top
           let align = "center" as CanvasTextAlign;
+          let baseline = "bottom" as CanvasTextBaseline;
 
           if (layoutType === "stadium") {
             const padX = 12 + 10 / zoom;
@@ -507,20 +509,24 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
             
             if (sec.name.includes("South") || sec.name.includes("SW Corner") || sec.name.includes("SE Corner")) {
               labelY = sec.maxY + padY + (6 / zoom); 
+              baseline = "top";
             } else if (sec.name.includes("West")) {
               labelX = sec.minX - padX;
               labelY = (sec.minY + sec.maxY) / 2;
               align = "right";
+              baseline = "middle";
             } else if (sec.name.includes("East")) {
               labelX = sec.maxX + padX;
               labelY = (sec.minY + sec.maxY) / 2;
               align = "left";
+              baseline = "middle";
             }
           }
 
           ctx.fillStyle = col.hoverStroke + "99";
           ctx.font = `bold ${11 / zoom}px Inter,sans-serif`;
           ctx.textAlign = align;
+          ctx.textBaseline = baseline;
           ctx.fillText(sec.name, labelX, labelY);
         });
 
@@ -588,6 +594,101 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
   const handleMouseLeave = () => {
     dragRef.current.isDragging = false;
     setHoveredSeatId(null); setHoveredSection(null);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      dragRef.current = { isDragging: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, moved: false };
+      lastTouchRef.current = null;
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      lastTouchRef.current = { d, cx, cy };
+      dragRef.current.isDragging = false;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
+
+    if (e.touches.length === 1 && dragRef.current.isDragging) {
+      const dx = (e.touches[0].clientX - dragRef.current.startX) * sx;
+      const dy = (e.touches[0].clientY - dragRef.current.startY) * sy;
+      targetRef.current.x += dx; camRef.current.x += dx;
+      targetRef.current.y += dy; camRef.current.y += dy;
+      dragRef.current.startX = e.touches[0].clientX; dragRef.current.startY = e.touches[0].clientY;
+      dragRef.current.moved = true;
+    } else if (e.touches.length === 2 && lastTouchRef.current) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      
+      const scale = d / lastTouchRef.current.d;
+      const cxx = (cx - rect.left) * sx, cyy = (cy - rect.top) * sy;
+      
+      const wx = (cxx - targetRef.current.x) / targetRef.current.zoom;
+      const wy = (cyy - targetRef.current.y) / targetRef.current.zoom;
+      
+      let z = targetRef.current.zoom * scale;
+      z = Math.max(0.28, Math.min(z, 5.5));
+      
+      targetRef.current = { x: cxx - wx * z, y: cyy - wy * z, zoom: z };
+      camRef.current.zoom = z;
+      
+      lastTouchRef.current = { d, cx, cy };
+      dragRef.current.moved = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 0) {
+      dragRef.current.isDragging = false;
+      lastTouchRef.current = null;
+      if (!dragRef.current.moved) {
+        // Tap handler
+        const touch = e.changedTouches[0];
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
+          const wx = ((touch.clientX - rect.left) * sx - camRef.current.x) / camRef.current.zoom;
+          const wy = ((touch.clientY - rect.top)  * sy - camRef.current.y) / camRef.current.zoom;
+          
+          const isOverview = camRef.current.zoom < SECTION_ZOOM_THRESHOLD;
+          if (isOverview) {
+            let found: string | null = null;
+            for (const sec of sections) {
+              const shape = overviewShapes[sec.name];
+              if (shape && pointInShape(wx, wy, shape) && sec.availableSeats > 0) { found = sec.name; break; }
+            }
+            if (found) { zoomToSection(found); setActiveSection(found); }
+          } else {
+            let found: string | null = null;
+            for (const s of seats) {
+              const dx2 = wx - s.x, dy2 = wy - s.y;
+              if (dx2 * dx2 + dy2 * dy2 <= (s.radius + 15) ** 2) { found = s.id; break; } // Larger hit area (15 instead of 3)
+            }
+            if (found && selectionMode !== "auto") {
+              const seat = seats.find((s) => s.id === found);
+              if (seat && seat.status !== "taken" && !(seat.status === "held" && !selectedIds.has(seat.id))) {
+                setPovSeat(povSeat?.id === seat.id ? null : seat);
+                const isRemoving = selectedIds.has(seat.id);
+                setSelectedIds((prev) => { const next = new Set(prev); next.has(seat.id) ? next.delete(seat.id) : next.add(seat.id); return next; });
+                if (isRemoving) { emitUnlock(seat.id); } else { emitLock(seat.id); }
+              }
+            }
+          }
+        }
+      }
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -803,9 +904,10 @@ export function SeatMap({ onSelectionChange, basePrice, layoutType = "arena", se
           tabIndex={0}
           onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
           onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
           onDoubleClick={handleDoubleClick} onClick={handleClick}
           className="mx-auto block"
-          style={{ width: "100%", maxWidth: "1000px", aspectRatio: "10/7" }} />
+          style={{ width: "100%", maxWidth: "1000px", aspectRatio: "10/7", touchAction: "none" }} />
         <p id="seatmap-desc" className="sr-only">
           Drag to pan, scroll or pinch to zoom. Click a section to zoom in, then click individual seats to add them to your order. Use the price filter and auto-assign tools above for keyboard-friendly selection.
         </p>

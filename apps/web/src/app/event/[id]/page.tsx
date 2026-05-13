@@ -1,19 +1,41 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { notFound, useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/Button";
-import { mockEvents } from "@/lib/mock";
+import { fetchEventById } from "@/lib/api";
+import type { MockEvent } from "@/lib/mock";
 import { Calendar, MapPin, Clock, Info } from "lucide-react";
 
 export default function EventPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const event = mockEvents.find((e) => e.id === params.id);
+  const [event, setEvent] = useState<MockEvent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  if (!event) return notFound();
+  useEffect(() => {
+    fetchEventById(params.id)
+      .then((e) => {
+        setEvent(e);
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, [params.id]);
+
+  if (!isLoading && !event) return notFound();
+
+  if (isLoading || !event) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full" />
+        </main>
+      </>
+    );
+  }
 
   // Generate fake varied dates
   const fakeDates = [

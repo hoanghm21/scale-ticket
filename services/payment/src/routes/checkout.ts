@@ -1,13 +1,16 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { CreateIntentSchema } from "../schemas/checkout.schema";
-import { MockStripeDriver } from "../lib/stripe-mock";
+import Stripe from "stripe";
 import pino from "pino";
 
 const router = Router();
 const logger = pino({ name: "checkout-route" });
 
 // ── Secrets / config ──────────────────────────────────────────────────────────
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "sk_test_mock";
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-04-10" });
 
 const STRIPE_WEBHOOK_SECRET =
   process.env.STRIPE_WEBHOOK_SECRET || "whsec_dev_local_secret";
@@ -192,7 +195,11 @@ router.post("/intent", async (req: Request, res: Response) => {
       "Received checkout request"
     );
 
-    const intent = await MockStripeDriver.createPaymentIntent(totalAmountCents, "usd");
+    const intent = await stripe.paymentIntents.create({
+      amount: totalAmountCents,
+      currency: "usd",
+      metadata: { eventId, holderId, userId: userId || "" },
+    });
 
     pendingIntents.set(intent.id, {
       intentId: intent.id,
@@ -304,6 +311,61 @@ router.post("/webhook", async (req: Request, res: Response) => {
 
     // Ack Stripe (200) so it stops re-delivering — the DLQ is authoritative now.
     return res.status(200).send("Webhook Processed (Stored in DLQ)");
+  }
+});
+
+// ── Mock confirm ─────────────────────────────────────────────────────────────
+// In production Stripe.js confirms via the client_secret and Stripe sends a
+// webhook.  In dev/mock mode the frontend calls this endpoint directly to
+// simulate a successful charge.  It performs the same seat-confirmation as the
+// webhook success path but with a simpler contract.
+
+router.post("/confirm", async (req: Request, res: Response) => {
+  const { intentId } = req.body as { intentId?: string };
+  if (!intentId) {
+    return res.status(400).json({ error: "Missing intentId" });
+  }
+
+  const pending = pendingIntents.get(intentId);
+  if (!pending) {
+    return res.status(404).json({ error: "Unknown payment intent" });
+  }
+
+  if (pending.status === "confirmed") {
+    return res.status(200).json({ success: true, alreadyConfirmed: true });
+  }
+
+  if (pending.status === "rolled_back") {
+    return res.status(409).json({ error: "Payment was rolled back" });
+  }
+
+  // Simulate payment processing delay (shorter than intent creation)
+  await new Promise((r) => setTimeout(r, 800));
+
+  logger.info({ intentId, eventId: pending.eventId }, "Mock confirm — confirming seats");
+
+  try {
+    await withRetry(() =>
+      confirmSeatsSold(pending.eventId, pending.seatIds, pending.holderId)
+    );
+    pending.status = "confirmed";
+
+    logger.info({ intentId }, "Mock confirm — seats confirmed sold");
+    return res.json({
+      success: true,
+      intentId,
+      eventId: pending.eventId,
+      seatIds: pending.seatIds,
+      amountCents: pending.amountCents,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error({ err: msg, intentId }, "Mock confirm — failed, rolling back");
+
+    await releaseSeats(pending.eventId, pending.seatIds, pending.holderId);
+    pending.status = "rolled_back";
+
+    return res.status(500).json({ error: "Payment confirmation failed", detail: msg });
   }
 });
 

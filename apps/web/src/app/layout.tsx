@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "ScaleTicket — Real-time Event Ticketing",
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="dark">
       <body className="min-h-screen bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] selection:bg-indigo-500/30">
         {children}
+        <Toaster theme="dark" />
       </body>
     </html>
   );

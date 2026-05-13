@@ -1,9 +1,15 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrTicketNotFound = errors.New("ticket not found")
+	ErrAlreadyCheckedIn = errors.New("ticket already checked in")
 )
 
 // Ticket represents a purchased ticket.

@@ -10,6 +10,15 @@ import crypto from "crypto";
 
 const logger = pino({ name: "gateway" });
 
+// ── Security config ───────────────────────────────────────────────────────────
+
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:3001").split(",").map(s => s.trim());
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || "dev-internal-token";
+
+if (INTERNAL_TOKEN === "dev-internal-token") {
+  logger.warn("Using default INTERNAL_TOKEN — set a strong token in production!");
+}
+
 // ── Downstream service targets ────────────────────────────────────────────────
 
 const TARGETS = {
@@ -26,11 +35,18 @@ const TARGETS = {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
+  cors: {
+    origin: ALLOWED_ORIGINS,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
+app.use(cors({
+  origin: ALLOWED_ORIGINS,
+  credentials: true,
+}));
 
 // Correlation id — attaches `x-request-id` to every request so logs can be
 // stitched across services. Honors an upstream value if the caller sends one.
@@ -67,15 +83,82 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Placeholder auth middleware — verifies a bearer JWT once the auth service
-// is wired. For now it forwards the header untouched so downstream services
-// can do their own checks.
-const authMiddleware: express.RequestHandler = (req, _res, next) => {
-  const auth = req.header("authorization");
-  if (auth) {
-    logger.debug({ path: req.path }, "forwarding bearer token");
+// Auth middleware — validates bearer token via the auth service.
+// Caches valid tokens briefly to avoid per-request overhead.
+const tokenCache = new Map<string, { valid: boolean; user: unknown; expiresAt: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Clean stale cache entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of tokenCache) {
+    if (entry.expiresAt < now) tokenCache.delete(key);
   }
-  next();
+}, 10 * 60 * 1000);
+
+const authMiddleware: express.RequestHandler = async (req, res, next) => {
+  const auth = req.header("authorization");
+  if (!auth) {
+    // Allow unauthenticated requests to pass — endpoints that truly
+    // need auth should check again downstream.
+    return next();
+  }
+
+  // Validate bearer format
+  if (!auth.startsWith("Bearer ") || auth.length < 10) {
+    logger.warn({ path: req.path }, "rejected malformed Authorization header");
+    return res.status(401).json({ error: "Malformed Authorization header" });
+  }
+
+  const token = auth.slice(7);
+
+  // Check cache first
+  const cached = tokenCache.get(token);
+  if (cached && cached.expiresAt > Date.now()) {
+    if (!cached.valid) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+    // Attach user info to header for downstream services
+    req.headers["x-user-id"] = JSON.stringify(cached.user);
+    return next();
+  }
+
+  // Verify with auth service
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const validateRes = await fetch(`${TARGETS.auth}/api/auth/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const data = await validateRes.json() as { valid: boolean; user?: unknown; error?: string };
+
+    tokenCache.set(token, {
+      valid: data.valid,
+      user: data.user || null,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
+
+    if (!data.valid) {
+      logger.debug({ path: req.path }, "token validation failed");
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    if (data.user) {
+      req.headers["x-user-id"] = JSON.stringify(data.user);
+    }
+
+    logger.debug({ path: req.path }, "token validated successfully");
+    next();
+  } catch (err) {
+    // If auth service is down, allow request to pass (graceful degradation)
+    logger.warn({ path: req.path, err }, "auth service unreachable, allowing request");
+    next();
+  }
 };
 
 // ── Proxy wiring (order matters — proxies must come before express.json) ──────
@@ -84,6 +167,7 @@ const passthroughProxy = (target: string) =>
   createProxyMiddleware({
     target,
     changeOrigin: true,
+    pathRewrite: (path, req) => (req as express.Request).originalUrl,
     proxyTimeout: 10_000,
     timeout: 10_000,
     on: {

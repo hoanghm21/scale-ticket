@@ -15,11 +15,12 @@ import {
 
 const logger = pino({ name: "realtime-service" });
 const PORT = parseInt(process.env.PORT || "4003", 10);
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:3001").split(",").map(s => s.trim());
 
 // ── Express App (Tier 1: REST Seat Inventory API) ──────────────────────────────
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json());
 
 // GET /api/seats/:eventId — returns the full seat snapshot for initial page load
@@ -90,7 +91,7 @@ const server = http.createServer(app);
 // ── Socket.io (Tiers 2-3: Rooms + Lock/Unlock Broadcasting) ────────────────────
 
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: { origin: ALLOWED_ORIGINS, credentials: true },
 });
 
 // Track which event room each socket is in

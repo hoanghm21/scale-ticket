@@ -10,7 +10,7 @@ export const CartItemSchema = z.object({
 
 export const CreateIntentSchema = z.object({
   body: z.object({
-    eventId: z.string().uuid("Invalid Event ID"),
+    eventId: z.string().min(1, "Event ID is required"),
     cartItems: z.array(CartItemSchema).min(1, "Cart cannot be empty"),
   })
 });

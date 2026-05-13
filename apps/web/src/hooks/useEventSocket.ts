@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { toast } from "sonner";
 
 const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:4003";
 
@@ -57,6 +58,14 @@ export function useEventSocket({ eventId, onSnapshot, onSeatChange, onLockAck }:
     // Tier 4: Listen for individual seat status changes
     socket.on("seat_status_change", (change: SeatStatusChange) => {
       onSeatChangeRef.current(change);
+      
+      // Notify user when someone else buys a ticket
+      if (change.status === "sold") {
+        toast.info("A ticket was just purchased by another user!", {
+          description: `Seat ${change.seatId} is no longer available.`,
+          duration: 3000,
+        });
+      }
     });
 
     // Tier 5: Lock acknowledgment

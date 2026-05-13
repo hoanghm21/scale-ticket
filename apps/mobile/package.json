@@ -27,7 +27,7 @@
     "@shopify/flash-list": "1.6.4",
     "socket.io-client": "^4.7.0",
     "zustand": "^4.5.0",
-    "@tanstack/react-query": "^5.28.0",
+    "@tanstack/react-query": "^5.100.10",
     "@scale-ticket/shared-types": "workspace:*",
     "@scale-ticket/utils": "workspace:*"
   },

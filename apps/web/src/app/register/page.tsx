@@ -15,22 +15,40 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Mock registration delay
-    setTimeout(() => {
-      login("mock_jwt_token_123", {
-        id: "u_" + Math.random().toString(36).substr(2, 9),
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        role: "user"
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, firstName, lastName }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
+        setIsLoading(false);
+        return;
+      }
+
+      login(data.tokens.accessToken, {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        role: data.user.role,
       });
       router.push("/dashboard");
-    }, 800);
+    } catch (err) {
+      setError("Unable to connect to the server. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +68,11 @@ export default function RegisterPage() {
         <p className="text-gray-400 text-center mb-8 text-sm">Join ScaleTicket to secure your seats</p>
 
         <form onSubmit={handleRegister} className="space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-md animate-fade-in">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">First Name</label>

@@ -160,11 +160,11 @@ export function generateSeats(
     genArc(out, rng, "SW Corner", 220, 414, 50, 6, 5, PI * 0.5, PI * 1.0, 0.7, basePrice, 2.5);
     genArc(out, rng, "SE Corner", 580, 414, 50, 6, 5, 0, PI * 0.5, 0.7, basePrice, 2.5);
   } else if (layoutType === "arena") {
-    genRect(out, rng, "Floor VIP", 310, 180, 5, 11, 0.6, basePrice, 2.5);
-    genRect(out, rng, "Floor General", 290, 280, 7, 13, 0.7, basePrice, 1.5);
-    genArc(out, rng, "Bowl Left", 400, 230, 220, 12, 8, PI * 0.95, PI * 0.70, 0.8, basePrice, 1.0);
-    genArc(out, rng, "Bowl Center", 400, 230, 220, 12, 16, PI * 0.65, PI * 0.35, 0.8, basePrice, 1.0);
-    genArc(out, rng, "Bowl Right", 400, 230, 220, 12, 8, PI * 0.30, PI * 0.05, 0.8, basePrice, 1.0);
+    genRect(out, rng, "Floor VIP", 310, 170, 5, 11, 0.6, basePrice, 2.5);
+    genRect(out, rng, "Floor General", 310, 290, 7, 11, 0.7, basePrice, 1.5);
+    genArc(out, rng, "Bowl Left", 400, 255, 220, 12, 8, PI * 0.95, PI * 0.70, 0.8, basePrice, 1.0);
+    genArc(out, rng, "Bowl Center", 400, 255, 220, 12, 16, PI * 0.65, PI * 0.35, 0.8, basePrice, 1.0);
+    genArc(out, rng, "Bowl Right", 400, 255, 220, 12, 8, PI * 0.30, PI * 0.05, 0.8, basePrice, 1.0);
   } else {
     // Theater
     for (let r = 0; r < 14; r++) {
@@ -173,12 +173,12 @@ export function generateSeats(
       for (let c = 0; c < cols; c++)
         out.push(makeSeat(rng, "Swan", startX + c * SP, 152 + r * SP, r, c, 0.5, basePrice, 3.0));
     }
-    genRect(out, rng, "Sword L", 216, 196, 12, 4, 0.6, basePrice, 2.4);
-    genRect(out, rng, "Sword R", 530, 196, 12, 4, 0.6, basePrice, 2.4);
-    genRect(out, rng, "Ballerina L", 132, 160, 14, 4, 0.7, basePrice, 1.8);
-    genRect(out, rng, "Ballerina R", 614, 160, 14, 4, 0.7, basePrice, 1.8);
-    genRect(out, rng, "Feather L", 54, 150, 14, 4, 0.75, basePrice, 1.2);
-    genRect(out, rng, "Feather R", 692, 150, 14, 4, 0.75, basePrice, 1.2);
+    genRect(out, rng, "Sword L", 198, 196, 12, 4, 0.6, basePrice, 2.4);
+    genRect(out, rng, "Sword R", 548, 196, 12, 4, 0.6, basePrice, 2.4);
+    genRect(out, rng, "Ballerina L", 120, 160, 14, 4, 0.7, basePrice, 1.8);
+    genRect(out, rng, "Ballerina R", 626, 160, 14, 4, 0.7, basePrice, 1.8);
+    genRect(out, rng, "Feather L", 42, 150, 14, 4, 0.75, basePrice, 1.2);
+    genRect(out, rng, "Feather R", 704, 150, 14, 4, 0.75, basePrice, 1.2);
     genRect(out, rng, "2F Feather L", 54, 438, 5, 9, 0.8, basePrice, 1.2);
     genRect(out, rng, "2F Feather C", 228, 438, 5, 20, 0.8, basePrice, 1.2);
     genRect(out, rng, "2F Feather R", 600, 438, 5, 9, 0.8, basePrice, 1.2);

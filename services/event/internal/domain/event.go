@@ -1,10 +1,13 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var ErrEventNotFound = errors.New("event not found")
 
 // Event represents a ticketed event.
 type Event struct {

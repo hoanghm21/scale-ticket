@@ -1,24 +1,46 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { notFound, useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/Button";
-import { mockEvents } from "@/lib/mock";
+import { fetchEventById } from "@/lib/api";
+import type { MockEvent } from "@/lib/mock";
 import { SeatMap, Seat } from "@/components/event/SeatMap";
 import { Calendar, MapPin, ChevronLeft, CheckCircle2, Ticket } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 
 export default function EventMapPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const event = mockEvents.find((e) => e.id === params.id);
+  const [event, setEvent] = useState<MockEvent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isChecking, setIsChecking] = useState(false);
   
   const cartStore = useCartStore();
   const selectedSeats = cartStore.eventId === params.id ? cartStore.items : [];
 
-  if (!event) return notFound();
+  useEffect(() => {
+    fetchEventById(params.id)
+      .then((e) => {
+        setEvent(e);
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, [params.id]);
+
+  if (!isLoading && !event) return notFound();
+
+  if (isLoading || !event) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full" />
+        </main>
+      </>
+    );
+  }
 
   const handleSelectionChange = (mapSeats: Seat[]) => {
     // Only dispatch if lengths mismatch to prevent infinite Zustand cycles

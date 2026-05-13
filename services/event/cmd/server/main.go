@@ -5,49 +5,92 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/scale-ticket/event/internal/handler"
+	"github.com/scale-ticket/event/internal/infrastructure"
+	"github.com/scale-ticket/event/internal/service"
 )
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
-	port := os.Getenv("GRPC_PORT")
-	if port == "" {
-		port = "50052"
+	// ── Dependencies ──────────────────────────────────────────────────────────
+	eventRepo := infrastructure.NewMemoryEventRepo()
+	eventService := service.NewEventService(eventRepo)
+	httpHandler := handler.NewHTTPHandler(eventService)
+
+	// ── HTTP Server (REST API) ────────────────────────────────────────────────
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		httpPort = "4011"
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
-	if err != nil {
-		slog.Error("failed to listen", "error", err, "port", port)
-		os.Exit(1)
+	mux := http.NewServeMux()
+	httpHandler.RegisterRoutes(mux)
+
+	httpServer := &http.Server{
+		Addr:         fmt.Sprintf(":%s", httpPort),
+		Handler:      handler.CORSMiddleware(mux),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
-
-	grpcServer := grpc.NewServer()
-
-	// TODO: Register event service handlers
-	// pb.RegisterEventServiceServer(grpcServer, handler.NewEventHandler(svc))
-
-	reflection.Register(grpcServer)
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
 
 	go func() {
-		slog.Info("Event service starting", "port", port)
-		if err := grpcServer.Serve(lis); err != nil {
-			slog.Error("failed to serve", "error", err)
+		slog.Info("Event HTTP server starting", "port", httpPort)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("HTTP server failed", "error", err)
 			os.Exit(1)
 		}
 	}()
 
+	// ── gRPC Server ───────────────────────────────────────────────────────────
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = "50052"
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
+	if err != nil {
+		slog.Error("failed to listen", "error", err, "port", grpcPort)
+		os.Exit(1)
+	}
+
+	grpcServer := grpc.NewServer()
+	// TODO: Register gRPC event service handlers when proto is generated
+	reflection.Register(grpcServer)
+
+	go func() {
+		slog.Info("Event gRPC server starting", "port", grpcPort)
+		if err := grpcServer.Serve(lis); err != nil {
+			slog.Error("gRPC server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// ── Graceful shutdown ─────────────────────────────────────────────────────
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	<-ctx.Done()
 	slog.Info("Event service shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		slog.Error("HTTP shutdown error", "error", err)
+	}
 	grpcServer.GracefulStop()
+
 	slog.Info("Event service stopped")
 }

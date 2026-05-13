@@ -1,21 +1,37 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { MousePointer2, Square, Hexagon, Save, Trash2, Code2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MousePointer2, Square, Hexagon, Save, Trash2, Code2, LogOut, List, BarChart3, QrCode } from "lucide-react";
 import { VenueSection, VenueSectionType, VenueLayoutSchema } from "@scale-ticket/shared-types";
+import { useAuthStore } from "@/store/authStore";
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 type DrawingMode = "select" | "rect" | "poly";
 
 export default function StudioPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
   const [schema, setSchema] = useState<VenueLayoutSchema>({
     id: generateId(),
     name: "New Stadium Project",
     category: "stadium",
     sections: [],
   });
-  
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [mounted, isAuthenticated, router]);
+
   const [mode, setMode] = useState<DrawingMode>("select");
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [previewJson, setPreviewJson] = useState(false);
@@ -154,14 +170,21 @@ export default function StudioPage() {
 
   const selectedSection = schema.sections.find(s => s.id === selectedSectionId);
 
+  if (!mounted || !isAuthenticated) return null;
+
   return (
     <div className="flex h-screen overflow-hidden bg-black text-white font-sans">
       <div className="w-16 border-r border-[#333] flex flex-col items-center py-4 space-y-4 bg-[#0A0A0A]">
-        <button className={`p-3 rounded-md hover:bg-[#222] ${mode==="select" && "bg-[#222] text-[#DFFF00]"}`} onClick={()=>setMode("select")}><MousePointer2 size={20}/></button>
-        <button className={`p-3 rounded-md hover:bg-[#222] ${mode==="rect" && "bg-[#222] text-[#DFFF00]"}`} onClick={()=>setMode("rect")}><Square size={20}/></button>
-        <button className={`p-3 rounded-md hover:bg-[#222] ${mode==="poly" && "bg-[#222] text-[#DFFF00]"}`} onClick={()=>setMode("poly")}><Hexagon size={20}/></button>
+        <button className={`p-3 rounded-md hover:bg-[#222] ${mode==="select" && "bg-[#222] text-[#DFFF00]"}`} onClick={()=>setMode("select")} title="Select"><MousePointer2 size={20}/></button>
+        <button className={`p-3 rounded-md hover:bg-[#222] ${mode==="rect" && "bg-[#222] text-[#DFFF00]"}`} onClick={()=>setMode("rect")} title="Draw Rectangle"><Square size={20}/></button>
+        <button className={`p-3 rounded-md hover:bg-[#222] ${mode==="poly" && "bg-[#222] text-[#DFFF00]"}`} onClick={()=>setMode("poly")} title="Draw Polygon"><Hexagon size={20}/></button>
+        <div className="w-8 h-[1px] bg-[#333] my-2" />
+        <button className="p-3 rounded-md hover:bg-[#222] text-gray-400" onClick={() => router.push("/dashboard")} title="Dashboard"><BarChart3 size={20}/></button>
+        <button className="p-3 rounded-md hover:bg-[#222] text-gray-400" onClick={() => router.push("/events")} title="Manage Events"><List size={20}/></button>
+        <button className="p-3 rounded-md hover:bg-[#222] text-gray-400" onClick={() => router.push("/tickets")} title="Ticket Scanner"><QrCode size={20}/></button>
         <div className="flex-1" />
-        <button className="p-3 rounded-md hover:bg-[#222] text-gray-400" onClick={()=>setPreviewJson(!previewJson)}><Code2 size={20}/></button>
+        <button className="p-3 rounded-md hover:bg-[#222] text-gray-400" onClick={()=>setPreviewJson(!previewJson)} title="Export JSON"><Code2 size={20}/></button>
+        <button className="p-3 rounded-md hover:bg-red-500/10 text-red-400" onClick={() => useAuthStore.getState().logout()} title="Sign Out"><LogOut size={20}/></button>
       </div>
 
       <div className="flex-1 relative bg-[#111]">

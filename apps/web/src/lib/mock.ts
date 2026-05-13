@@ -6,6 +6,8 @@ export interface MockEvent {
   venue: string;
   image: string;
   priceStart: number;
+  description?: string;
+  artist?: string;
 }
 
 export const mockEvents: MockEvent[] = [

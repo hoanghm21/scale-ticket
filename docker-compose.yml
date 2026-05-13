@@ -1,3 +1,6 @@
+# IMPORTANT: For production, create a .env file with strong secrets.
+# Copy .env.example and override POSTGRES_PASSWORD, JWT_SECRET, INTERNAL_TOKEN, STRIPE_SECRET_KEY.
+
 services:
   # ── Databases ──
   postgres:
@@ -7,9 +10,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: scaleticket
-      POSTGRES_PASSWORD: changeme
-      POSTGRES_DB: scaleticket
+      POSTGRES_USER: ${POSTGRES_USER:-scaleticket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
+      POSTGRES_DB: ${POSTGRES_DB:-scaleticket}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -78,11 +81,15 @@ services:
     container_name: st-auth
     restart: unless-stopped
     ports:
+      - "4010:4010"
       - "50051:50051"
     environment:
-      - DATABASE_URL=postgresql://scaleticket:changeme@postgres:5432/scaleticket
+      - HTTP_PORT=4010
+      - GRPC_PORT=50051
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-scaleticket}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-scaleticket}
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-key-change-in-production
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:4000
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,10 +105,14 @@ services:
     container_name: st-event
     restart: unless-stopped
     ports:
+      - "4011:4011"
       - "50052:50052"
     environment:
+      - HTTP_PORT=4011
+      - GRPC_PORT=50052
       - MONGODB_URL=mongodb://mongodb:27017/scaleticket_events
       - REDIS_URL=redis://redis:6379
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:4000
     depends_on:
       mongodb:
         condition: service_healthy
@@ -117,10 +128,14 @@ services:
     container_name: st-ticket
     restart: unless-stopped
     ports:
+      - "4012:4012"
       - "50053:50053"
     environment:
-      - DATABASE_URL=postgresql://scaleticket:changeme@postgres:5432/scaleticket
+      - HTTP_PORT=4012
+      - GRPC_PORT=50053
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-scaleticket}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-scaleticket}
       - REDIS_URL=redis://redis:6379
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:4000
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,8 +154,9 @@ services:
       - "4001:4001"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://scaleticket:changeme@postgres:5432/scaleticket
-      - STRIPE_SECRET_KEY=sk_test_xxx
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-scaleticket}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-scaleticket}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_xxx}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN:-dev-internal-token}
     depends_on:
       postgres:
         condition: service_healthy

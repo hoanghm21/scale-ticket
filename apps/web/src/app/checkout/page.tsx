@@ -10,17 +10,107 @@ import { CreditCard, CheckCircle2, ShieldCheck, ChevronLeft, Ticket } from "luci
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useTicketStore } from "@/store/ticketStore";
-import { mockEvents } from "@/lib/mock";
+
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+// Initialize Stripe outside of component to avoid recreating it
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_TYooMQauvdEDq54NiTphI7jx");
+
+function StripeCheckoutForm({
+  clientSecret,
+  intentId,
+  finalTotal,
+  onSuccess,
+}: {
+  clientSecret: string;
+  intentId: string;
+  finalTotal: number;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsProcessing(true);
+    setErrorMessage("");
+
+    try {
+      // Confirm the payment via Stripe
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + "/dashboard",
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        setErrorMessage(error.message || "An error occurred during payment.");
+        setIsProcessing(false);
+        return;
+      }
+
+      if (paymentIntent && paymentIntent.status === "succeeded") {
+        // Still call the mock confirm endpoint so the backend generates the ticket
+        await fetch("/api/checkout/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ intentId }),
+        });
+        
+        onSuccess();
+      } else {
+        setErrorMessage("Payment was not successful. Please try again.");
+      }
+    } catch (e: any) {
+      setErrorMessage(e.message || "An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePayment} className="space-y-6">
+      <PaymentElement className="bg-white p-4 rounded-xl" />
+      {errorMessage && <div className="text-red-500 text-sm mt-2">{errorMessage}</div>}
+      
+      <Button 
+        type="submit"
+        size="lg" 
+        className="w-full relative overflow-hidden mt-6" 
+        disabled={isProcessing || !stripe || !elements}
+      >
+        {isProcessing ? "Processing..." : `Pay $${finalTotal.toFixed(2)}`}
+      </Button>
+      <p className="text-center text-xs text-gray-500 mt-4 flex items-center justify-center">
+        <ShieldCheck className="w-3.5 h-3.5 mr-1" /> All transactions are highly encrypted by Stripe
+      </p>
+    </form>
+  );
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const cartStore = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
-  const addTicket = useTicketStore(state => state.addTicket);
+  const createTicketViaAPI = useTicketStore(state => state.createTicketViaAPI);
+  
   const [method, setMethod] = useState<"card" | "paypal">("card");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [intentId, setIntentId] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const seatsSubtotal = cartStore.getTotal();
+  const serviceFee = seatsSubtotal * 0.10; // 10% fee
+  const taxes = seatsSubtotal * 0.06; // 6% tax
+  const finalTotal = seatsSubtotal + serviceFee + taxes;
 
   useEffect(() => {
     setMounted(true);
@@ -32,45 +122,59 @@ export default function CheckoutPage() {
     }
   }, [mounted, isAuthenticated, router]);
 
+  // Fetch payment intent when the cart is loaded
+  useEffect(() => {
+    if (mounted && isAuthenticated && cartStore.items.length > 0 && !clientSecret) {
+      const fetchIntent = async () => {
+        try {
+          const res = await fetch("/api/checkout/intent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventId: cartStore.eventId || "test_event_123",
+              holderId: user?.id || "anonymous",
+              userId: user?.id,
+              cartItems: cartStore.items.map(s => ({
+                seatId: s.id,
+                section: s.section,
+                row: s.row,
+                col: s.col,
+                price: s.price
+              }))
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            setClientSecret(data.clientSecret);
+            setIntentId(data.intentId);
+          }
+        } catch (e) {
+          console.error("Failed to create intent", e);
+        }
+      };
+      
+      fetchIntent();
+    }
+  }, [mounted, isAuthenticated, cartStore.items, cartStore.eventId, user?.id, clientSecret]);
+
   if (!mounted || !isAuthenticated) return null;
 
-  const handlePayment = async () => {
-    setIsProcessing(true);
-    
+  const handleSuccess = async () => {
     try {
-      // Hit the Gateway API
-      const res = await fetch("http://localhost:4000/api/checkout/intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventId: cartStore.eventId || "test_event_123",
-          cartItems: cartStore.items.map(s => ({
-            seatId: s.id,
-            section: s.section,
-            row: s.row,
-            col: s.col,
-            price: s.price
-          }))
-        })
-      });
+      // Step 3: Create ticket via the Ticket Service API
+      const { fetchEventById } = await import("@/lib/api");
+      const eventDetails = await fetchEventById(cartStore.eventId || "");
+      const fallbackEvent = { title: "Event", date: "", venue: "", image: "" };
+      const ev = eventDetails || fallbackEvent;
 
-      if (!res.ok) throw new Error("Payment Failed");
-
-      const data = await res.json();
-      console.log("Stripe Client Secret received:", data.clientSecret);
-
-      const eventDetails = mockEvents.find(e => e.id === cartStore.eventId) || mockEvents[0];
-
-      const ticketId = "TKT-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-
-      addTicket({
-        id: ticketId,
+      const ticketData = {
         userId: user?.id || "",
         eventId: cartStore.eventId || "",
-        eventTitle: eventDetails.title,
-        eventDate: eventDetails.date,
-        eventVenue: eventDetails.venue,
-        eventImage: eventDetails.image,
+        eventTitle: ev.title,
+        eventDate: ev.date,
+        eventVenue: ev.venue,
+        eventImage: ev.image,
         seats: cartStore.items.map(item => ({
           id: item.id,
           section: item.section,
@@ -78,24 +182,26 @@ export default function CheckoutPage() {
           col: item.col,
           price: item.price
         })),
-        totalPrice: cartStore.getTotal(),
-        purchaseDate: Date.now()
-      });
+        totalPrice: finalTotal, // Using final total including taxes
+      };
 
-      // Fire notification asynchronously through the Gateway
-      fetch("http://localhost:4000/api/notify/purchase", {
+      const token = useAuthStore.getState().token || "";
+      const created = await createTicketViaAPI(ticketData, token);
+      const ticketId = created?.id || created?.ticketCode || "TKT-LOCAL";
+
+      // Step 4: Fire notification asynchronously (best-effort)
+      fetch("/api/notify/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user?.email || "guest@example.com",
           firstName: user?.firstName || "Guest",
-          eventTitle: eventDetails.title,
+          eventTitle: ev.title,
           ticketId: ticketId,
           seats: cartStore.items.length
         })
-      }).catch(err => console.error("Notification failed", err));
+      }).catch(err => console.error("Notification failed (non-blocking):", err));
 
-      setIsProcessing(false);
       setSuccess(true);
       cartStore.clearCart();
       
@@ -104,24 +210,9 @@ export default function CheckoutPage() {
       const end = Date.now() + duration;
 
       const frame = () => {
-        confetti({
-          particleCount: 5,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ['#5C7CFA', '#10B981', '#F59E0B']
-        });
-        confetti({
-          particleCount: 5,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ['#5C7CFA', '#10B981', '#F59E0B']
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#5C7CFA', '#10B981', '#F59E0B'] });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#5C7CFA', '#10B981', '#F59E0B'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
       };
       frame();
 
@@ -130,16 +221,9 @@ export default function CheckoutPage() {
         router.push("/dashboard");
       }, 4000);
     } catch (e) {
-      console.error(e);
-      setIsProcessing(false);
-      alert("Payment intent failed. Ensure services/payment is running.");
+      console.error("Success handling error:", e);
     }
   };
-
-  const seatsSubtotal = cartStore.getTotal();
-  const serviceFee = seatsSubtotal * 0.10; // 10% fee
-  const taxes = seatsSubtotal * 0.06; // 6% tax
-  const finalTotal = seatsSubtotal + serviceFee + taxes;
 
   if (success) {
     return (
@@ -230,21 +314,28 @@ export default function CheckoutPage() {
               </div>
 
               {method === "card" && (
-                <div className="space-y-4 animate-fade-in">
-                  <div>
-                    <label htmlFor="checkout-card-number" className="sr-only">Card number</label>
-                    <input id="checkout-card-number" name="cardNumber" autoComplete="cc-number" inputMode="numeric" type="text" placeholder="Card Number" aria-label="Card number" className="w-full bg-surface-dark border border-gray-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-white outline-none" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="checkout-card-expiry" className="sr-only">Expiration date, MM slash YY</label>
-                      <input id="checkout-card-expiry" name="cardExpiry" autoComplete="cc-exp" inputMode="numeric" type="text" placeholder="MM/YY" aria-label="Expiration date" className="w-full bg-surface-dark border border-gray-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-white outline-none" />
+                <div className="animate-fade-in">
+                  {clientSecret && intentId ? (
+                    <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+                      <StripeCheckoutForm 
+                        clientSecret={clientSecret} 
+                        intentId={intentId} 
+                        finalTotal={finalTotal} 
+                        onSuccess={handleSuccess} 
+                      />
+                    </Elements>
+                  ) : (
+                    <div className="h-32 flex items-center justify-center border border-gray-700 rounded-xl bg-surface-dark">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+                      <span className="ml-3 text-gray-400">Initializing secure payment...</span>
                     </div>
-                    <div>
-                      <label htmlFor="checkout-card-cvc" className="sr-only">Card security code</label>
-                      <input id="checkout-card-cvc" name="cardCvc" autoComplete="cc-csc" inputMode="numeric" type="text" placeholder="CVC" aria-label="Security code" className="w-full bg-surface-dark border border-gray-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-white outline-none" />
-                    </div>
-                  </div>
+                  )}
+                </div>
+              )}
+              
+              {method === "paypal" && (
+                <div className="h-32 flex items-center justify-center border border-gray-700 rounded-xl bg-surface-dark animate-fade-in text-gray-400">
+                  PayPal integration is not available in this demo.
                 </div>
               )}
             </div>
@@ -280,22 +371,12 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="flex justify-between items-center mb-8 pt-4 border-t border-gray-800">
+            <div className="flex justify-between items-center pt-4 border-t border-gray-800">
               <span className="text-white font-medium">Total</span>
               <span className="text-3xl font-display font-bold text-indigo-400">${finalTotal.toFixed(2)}</span>
             </div>
-
-            <Button 
-              size="lg" 
-              className="w-full relative overflow-hidden" 
-              onClick={handlePayment}
-              disabled={isProcessing || cartStore.items.length === 0}
-            >
-              {isProcessing ? "Processing..." : `Pay $${finalTotal.toFixed(2)}`}
-            </Button>
-            <p className="text-center text-xs text-gray-500 mt-4 flex items-center justify-center">
-              <ShieldCheck className="w-3.5 h-3.5 mr-1" /> All transactions are highly encrypted
-            </p>
+            
+            {/* The Pay button is now inside the StripeCheckoutForm */}
           </div>
 
         </div>

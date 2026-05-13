@@ -10,8 +10,10 @@ import { useTicketStore } from "@/store/ticketStore";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, token } = useAuthStore();
   const getTickets = useTicketStore(state => state.getUserTickets);
+  const syncFromAPI = useTicketStore(state => state.syncFromAPI);
+  const isTicketsLoading = useTicketStore(state => state.isLoading);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -23,6 +25,13 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [mounted, isAuthenticated, router]);
+
+  // Sync tickets from API on mount
+  useEffect(() => {
+    if (mounted && isAuthenticated && user?.id && token) {
+      syncFromAPI(user.id, token);
+    }
+  }, [mounted, isAuthenticated, user?.id, token, syncFromAPI]);
 
   if (!mounted || !isAuthenticated) return null;
 
@@ -42,7 +51,13 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-8">
             <h2 className="text-xl font-bold text-white mb-4">Upcoming Events ({user ? getTickets(user.id).length : 0})</h2>
             
-            {(!user || getTickets(user.id).length === 0) ? (
+            {isTicketsLoading ? (
+              <div className="space-y-6">
+                {[1, 2].map((i) => (
+                  <div key={i} className="w-full h-48 bg-surface-dark-secondary border border-gray-800 animate-pulse" />
+                ))}
+              </div>
+            ) : (!user || getTickets(user.id).length === 0) ? (
               <div className="bg-surface-dark-secondary rounded-2xl p-8 border border-gray-800 text-center text-gray-500">
                 <p>You haven&apos;t purchased any tickets yet.</p>
               </div>
