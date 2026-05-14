@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { sendPurchaseEmail } from "./mailer";
 
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:3001").split(",").map(s => s.trim());
 
@@ -11,26 +12,21 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "notification" });
 });
 
-app.post("/api/notify/purchase", (req, res) => {
+app.post("/api/notify/purchase", async (req, res) => {
   const { email, firstName, eventTitle, ticketId, seats } = req.body;
 
-  // Basic input validation
   if (!email || !eventTitle || !ticketId) {
     return res.status(400).json({ error: "Missing required fields: email, eventTitle, ticketId" });
   }
-  
-  console.log("\n=============================================");
-  console.log("🔔 NOTIFICATION SERVICE TRIGGERED");
-  console.log(`📧 Sending email to: ${email}`);
-  console.log(`Subject: Your Tickets for ${eventTitle}!`);
-  console.log(`Hi ${firstName || "Customer"},`);
-  console.log(`Your purchase was successful. Your ticket ID is: ${ticketId}`);
-  console.log(`Seats: ${seats} tickets`);
-  console.log("=============================================\n");
 
-  // TODO: Replace with real email provider (SendGrid, SES, Nodemailer)
-
-  res.json({ success: true, message: "Notification sent" });
+  try {
+    const { messageId, previewUrl } = await sendPurchaseEmail({ email, firstName, eventTitle, ticketId, seats });
+    console.log(`[notify/purchase] sent messageId=${messageId} to=${email}${previewUrl ? ` preview=${previewUrl}` : ""}`);
+    res.json({ success: true, messageId, previewUrl });
+  } catch (err) {
+    console.error("[notify/purchase] send failed", err);
+    res.status(502).json({ error: "Failed to send notification email" });
+  }
 });
 
 const PORT = process.env.PORT || 4002;
