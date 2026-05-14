@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package scaleticket.ticket.v1;
 
-option go_package = "github.com/scale-ticket/ticket/pkg/api/v1";
+option go_package = "github.com/scale-ticket/proto/gen/go;v1";
 
 service TicketService {
   rpc ReserveSeat(ReserveSeatRequest) returns (ReserveSeatResponse);

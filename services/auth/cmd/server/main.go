@@ -14,6 +14,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	pb "github.com/scale-ticket/proto/gen/go"
+
 	"github.com/scale-ticket/auth/internal/handler"
 	"github.com/scale-ticket/auth/internal/infrastructure"
 	"github.com/scale-ticket/auth/internal/service"
@@ -67,8 +69,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	// TODO: Register gRPC auth service handlers when proto is generated
-	// pb.RegisterAuthServiceServer(grpcServer, grpcHandler.NewAuthGRPCHandler(authService))
+	pb.RegisterAuthServiceServer(grpcServer, handler.NewAuthGRPCHandler(authService))
 
 	// Enable reflection for development
 	reflection.Register(grpcServer)

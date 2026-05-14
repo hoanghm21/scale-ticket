@@ -462,7 +462,7 @@ const file_ticket_proto_rawDesc = "" +
 	"\rTicketService\x12d\n" +
 	"\vReserveSeat\x12).scaleticket.ticket.v1.ReserveSeatRequest\x1a*.scaleticket.ticket.v1.ReserveSeatResponse\x12p\n" +
 	"\x0fPurchaseTickets\x12-.scaleticket.ticket.v1.PurchaseTicketsRequest\x1a..scaleticket.ticket.v1.PurchaseTicketsResponse\x12\x8b\x01\n" +
-	"\x18GetEventSeatAvailability\x126.scaleticket.ticket.v1.GetEventSeatAvailabilityRequest\x1a7.scaleticket.ticket.v1.GetEventSeatAvailabilityResponseB+Z)github.com/scale-ticket/ticket/pkg/api/v1b\x06proto3"
+	"\x18GetEventSeatAvailability\x126.scaleticket.ticket.v1.GetEventSeatAvailabilityRequest\x1a7.scaleticket.ticket.v1.GetEventSeatAvailabilityResponseB)Z'github.com/scale-ticket/proto/gen/go;v1b\x06proto3"
 
 var (
 	file_ticket_proto_rawDescOnce sync.Once

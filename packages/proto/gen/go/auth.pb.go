@@ -268,7 +268,7 @@ const file_auth_proto_rawDesc = "" +
 	"\x04role\x18\x05 \x01(\tR\x04role2\xcb\x01\n" +
 	"\vAuthService\x12f\n" +
 	"\rValidateToken\x12).scaleticket.auth.v1.ValidateTokenRequest\x1a*.scaleticket.auth.v1.ValidateTokenResponse\x12T\n" +
-	"\aGetUser\x12#.scaleticket.auth.v1.GetUserRequest\x1a$.scaleticket.auth.v1.GetUserResponseB)Z'github.com/scale-ticket/auth/pkg/api/v1b\x06proto3"
+	"\aGetUser\x12#.scaleticket.auth.v1.GetUserRequest\x1a$.scaleticket.auth.v1.GetUserResponseB)Z'github.com/scale-ticket/proto/gen/go;v1b\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once

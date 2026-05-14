@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package scaleticket.auth.v1;
 
-option go_package = "github.com/scale-ticket/auth/pkg/api/v1";
+option go_package = "github.com/scale-ticket/proto/gen/go;v1";
 
 service AuthService {
   rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);

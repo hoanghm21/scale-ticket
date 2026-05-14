@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package venue.v1;
 
-option go_package = "github.com/scale-ticket/event/internal/domain/proto/venue";
+option go_package = "github.com/scale-ticket/proto/gen/go;v1";
 
 message CreateVenueLayoutRequest {
   VenueLayoutSchema layout = 1;

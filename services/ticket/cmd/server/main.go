@@ -14,6 +14,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	pb "github.com/scale-ticket/proto/gen/go"
+
 	"github.com/scale-ticket/ticket/internal/handler"
 	"github.com/scale-ticket/ticket/internal/infrastructure"
 	"github.com/scale-ticket/ticket/internal/service"
@@ -66,7 +68,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	// TODO: Register gRPC ticket service handlers when proto is generated
+	pb.RegisterTicketServiceServer(grpcServer, handler.NewTicketGRPCHandler(ticketService))
 	reflection.Register(grpcServer)
 
 	go func() {

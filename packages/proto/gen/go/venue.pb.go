@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: venue.proto
 
-package venue
+package v1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -553,7 +553,7 @@ const file_venue_proto_rawDesc = "" +
 	"\x06points\x18\f \x03(\x01R\x06points2\xc1\x01\n" +
 	"\fVenueService\x12\\\n" +
 	"\x11CreateVenueLayout\x12\".venue.v1.CreateVenueLayoutRequest\x1a#.venue.v1.CreateVenueLayoutResponse\x12S\n" +
-	"\x0eGetVenueLayout\x12\x1f.venue.v1.GetVenueLayoutRequest\x1a .venue.v1.GetVenueLayoutResponseB;Z9github.com/scale-ticket/event/internal/domain/proto/venueb\x06proto3"
+	"\x0eGetVenueLayout\x12\x1f.venue.v1.GetVenueLayoutRequest\x1a .venue.v1.GetVenueLayoutResponseB)Z'github.com/scale-ticket/proto/gen/go;v1b\x06proto3"
 
 var (
 	file_venue_proto_rawDescOnce sync.Once
